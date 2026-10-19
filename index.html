@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sebastian Mathews, engineering portfolio</title>
+    <meta
+      name="description"
+      content="Mechanical engineer who takes new technology from concept to volume production. 19 projects with interactive explainers."
+    />
+    <meta name="theme-color" content="#0E1A24" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230E1A24'/%3E%3Cg fill='%23D8A657'%3E%3Crect x='6' y='6' width='20' height='3' rx='1'/%3E%3Crect x='8' y='13' width='16' height='3' rx='1'/%3E%3Crect x='10' y='20' width='12' height='3' rx='1'/%3E%3C/g%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <canvas id="scene" aria-hidden="true"></canvas>
+
+    <header class="topbar">
+      <a class="name" href="#/">Sebastian Mathews</a>
+      <nav class="contact" aria-label="Contact">
+        <a href="mailto:sebastianmathewsldp5@gmail.com">Email</a>
+        <a id="linkedin" href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a>
+        <button id="view-toggle" class="ghost" type="button" aria-pressed="false">Show as list</button>
+      </nav>
+    </header>
+
+    <section class="hero" id="hero">
+      <h1>Concept to volume production.</h1>
+      <p class="lede">
+        Mechanical engineer in Espoo, Finland. I lead engineering teams, build quality systems from a blank page and make
+        the tools that make production measurable.
+      </p>
+      <dl class="facts">
+        <div><dt>Years in engineering</dt><dd>10+</dd></div>
+        <div><dt>Industries</dt><dd>5</dd></div>
+        <div><dt>Production scale-up</dt><dd>kW to MW</dd></div>
+        <div><dt>Granted patent</dt><dd>1</dd></div>
+      </dl>
+      <p class="hint" id="hint">Pick a card to send the cryostat to it. Drag to spin the ring.</p>
+    </section>
+
+    <div class="filters" role="group" aria-label="Filter projects by theme" id="filters"></div>
+
+    <div class="stage-label" id="stage-label" role="status" aria-live="polite"></div>
+
+    <aside class="panel" id="panel" aria-hidden="true" aria-labelledby="panel-title" tabindex="-1">
+      <div class="panel-bar">
+        <button class="ghost" id="prev" type="button" aria-label="Previous project">Previous</button>
+        <button class="ghost" id="next" type="button" aria-label="Next project">Next</button>
+        <button class="close" id="close" type="button" aria-label="Close project">Close</button>
+      </div>
+      <div class="panel-body" id="panel-body"></div>
+    </aside>
+
+    <main class="list-view" id="list-view" hidden>
+      <h2>All projects</h2>
+      <ol class="list" id="list"></ol>
+    </main>
+
+    <noscript><p class="noscript">This portfolio needs JavaScript for the 3D view and explainers.</p></noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
