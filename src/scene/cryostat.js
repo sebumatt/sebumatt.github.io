@@ -37,7 +37,7 @@ export function createCryostat() {
     const mat = s.metal === 'steel' ? steel : gold;
     const plate = new THREE.Mesh(new THREE.CylinderGeometry(s.r, s.r, i === 0 ? 0.2 : 0.13, 72), mat);
     plate.position.y = s.y;
-    plate.userData.stage = s;
+    plate.userData.part = { name: s.name, detail: s.temp };
     body.add(plate);
     plates.push(plate);
 
@@ -135,5 +135,10 @@ export function createCryostat() {
   // Centre the model vertically around the origin.
   body.position.y = -0.2;
 
-  return { root, body, plates, glow };
+  function update(dt, t) {
+    body.rotation.y += dt * 0.12;
+    glow.scale.setScalar(1 + Math.sin(t * 2.2) * 0.15);
+  }
+
+  return { root, body, parts: plates, glow, lookAt() {}, update, restY: -0.2, faceTarget: true, openScale: 0.52 };
 }

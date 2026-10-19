@@ -4,6 +4,10 @@ import gsap from 'gsap';
 import { VISIBLE_PROJECTS as PROJECTS, TAGS, ORGS } from './data/projects.js';
 import { createStage } from './scene/stage.js';
 import { createCryostat } from './scene/cryostat.js';
+import { createWatcher } from './scene/watcher.js';
+
+// The centrepiece is neutral by default. ?for=bluefors swaps in the cryostat.
+const variant = new URLSearchParams(location.search).get('for');
 import { createRing } from './scene/ring.js';
 import { renderPanel } from './panel/panel.js';
 
@@ -132,7 +136,10 @@ async function init3D() {
 
   const stage = createStage($('#scene'));
   const { scene, camera, composer, view, applyView } = stage;
-  const cryo = createCryostat();
+  const cryo = variant === 'bluefors' ? createCryostat() : createWatcher();
+  $('#hint').textContent = variant === 'bluefors'
+    ? 'Pick a card to send the cryostat to it. Drag to spin the ring.'
+    : 'It watches your cursor. Pick a card to send it there. Drag to spin the ring.';
   scene.add(cryo.root);
   const ring = createRing(PROJECTS);
   scene.add(ring.group);
@@ -157,6 +164,20 @@ async function init3D() {
   const ndc = new THREE.Vector2();
   let hovered = null;
   let drag = null;
+  const pointer = { inside: false, world: new THREE.Vector3() };
+  const scan = new THREE.Vector3();
+  const gaze = new THREE.Vector3();
+  const headPos = new THREE.Vector3();
+  function trackPointer(e) {
+    ndc.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    cryo.root.getWorldPosition(headPos);
+    const dist = camera.position.distanceTo(headPos) * 0.75;
+    pointer.world.copy(raycaster.ray.origin).addScaledVector(raycaster.ray.direction, dist);
+    pointer.inside = true;
+  }
+  window.addEventListener('pointermove', trackPointer);
+  document.addEventListener('pointerleave', () => (pointer.inside = false));
   let spinVelocity = 0;
 
   function pick(e) {
@@ -164,7 +185,7 @@ async function init3D() {
     raycaster.setFromCamera(ndc, camera);
     const cards = ring.cards.filter((c) => c.visible && c.userData.opacity > 0.5);
     const hit = raycaster.intersectObjects(cards, false)[0];
-    const plateHit = hit ? null : raycaster.intersectObjects(cryo.plates, false)[0];
+    const plateHit = hit ? null : raycaster.intersectObjects(cryo.parts, false)[0];
     return { card: hit?.object ?? null, plate: plateHit?.object ?? null };
   }
 
@@ -185,8 +206,8 @@ async function init3D() {
     const { card, plate } = pick(e);
     setHover(card);
     if (plate) {
-      const s = plate.userData.stage;
-      stageLabel.textContent = `${s.name}, ${s.temp}`;
+      const s = plate.userData.part;
+      stageLabel.textContent = `${s.name}: ${s.detail}`;
       stageLabel.style.transform = `translate(${e.clientX + 14}px, ${e.clientY + 14}px)`;
       stageLabel.classList.add('show');
     } else stageLabel.classList.remove('show');
@@ -264,7 +285,7 @@ async function init3D() {
     out.normalize();
     const left = new THREE.Vector3(out.z, 0, -out.x).negate(); // camera-left when looking in from outside
     const narrow = isNarrow();
-    const C = P.clone().addScaledVector(left, narrow ? 1.7 : 2.3).add(new THREE.Vector3(0, -0.15, 0));
+    const C = P.clone().addScaledVector(left, narrow ? 2 : 2.8).add(new THREE.Vector3(0, -0.15, 0));
     const F = P.clone().add(C).multiplyScalar(0.5);
     const camPos = F.clone().addScaledVector(out, narrow ? 17 : 10.5).add(new THREE.Vector3(0, 0.7, 0));
 
@@ -287,8 +308,8 @@ async function init3D() {
       ease: 'power2.inOut',
       onUpdate: () => bez(flight.t, cryo.root.position),
     }, 0)
-      .to(cryo.root.scale, { x: 0.52, y: 0.52, z: 0.52, duration: T(1.2), ease: 'power2.inOut' }, 0)
-      .to(cryo.root.rotation, { y: Math.atan2(out.x, out.z), duration: T(1.5), ease: 'power2.inOut' }, 0)
+      .to(cryo.root.scale, { x: cryo.openScale, y: cryo.openScale, z: cryo.openScale, duration: T(1.2), ease: 'power2.inOut' }, 0)
+      .to(cryo.root.rotation, { y: cryo.faceTarget ? Math.atan2(out.x, out.z) : 0, duration: T(1.5), ease: 'power2.inOut' }, 0)
       .to(camera.position, { x: camPos.x, y: camPos.y, z: camPos.z, duration: T(1.6), ease: 'power3.inOut' }, 0.05)
       .to(camTarget, { x: F.x, y: F.y, z: F.z, duration: T(1.6), ease: 'power3.inOut' }, 0.05)
       .to(view, { shift: narrow ? 0 : 0.26, shiftY: narrow ? 0.33 : 0, duration: T(1.4), ease: 'power2.inOut', onUpdate: applyView }, 0.1)
@@ -351,11 +372,15 @@ async function init3D() {
       ring.speed += ((hovered ? 0.012 : ring.baseSpeed) - ring.speed) * Math.min(1, dt * 3);
     }
     ring.update(dt, camera);
+    // Where the head looks: the open card, the cursor, or a slow idle scan.
+    const active = currentId && ring.cards.find((c) => c.userData.project.id === currentId);
+    if (active) cryo.lookAt(gaze.copy(active.position).lerp(camera.position, 0.45));
+    else if (pointer.inside) cryo.lookAt(pointer.world);
+    else cryo.lookAt(scan.set(Math.sin(t * 0.35) * 6, 1 + Math.sin(t * 0.6), 9));
+    cryo.update(dt, t);
     if (!reducedMotion) {
-      cryo.body.rotation.y += dt * 0.12;
-      cryo.body.position.y = -0.2 + Math.sin(t * 0.8) * 0.08;
+      cryo.body.position.y = cryo.restY + Math.sin(t * 0.8) * 0.06;
     }
-    cryo.glow.scale.setScalar(1 + Math.sin(t * 2.2) * 0.15);
     camera.lookAt(camTarget);
     composer.render();
     requestAnimationFrame(frame);
