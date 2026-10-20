@@ -152,7 +152,6 @@ export function createWatcher() {
     pupil.position.z = 0.286;
     eye.add(pupil);
     eye.userData = { iris, pupil };
-    label(barrel, 'Camera', 'Follows your cursor');
     eyes.push(eye);
   }
 
@@ -175,8 +174,8 @@ export function createWatcher() {
 
   function update(dt, t) {
     // Shortest way round for yaw.
-    // The head covers most of the turn; the pupils lead and cover the rest.
-    let dy = state.targetYaw * 0.75 - state.yaw;
+    // The head turns the full way round; the pupils lead slightly.
+    let dy = state.targetYaw - state.yaw;
     dy = Math.atan2(Math.sin(dy), Math.cos(dy));
     state.yaw += dy * Math.min(1, dt * 5);
     state.pitch += (state.targetPitch * 0.75 - state.pitch) * Math.min(1, dt * 6);

@@ -139,7 +139,7 @@ async function init3D() {
   const cryo = variant === 'bluefors' ? createCryostat() : createWatcher();
   $('#hint').textContent = variant === 'bluefors'
     ? 'Pick a card to send the cryostat to it. Drag to spin the ring.'
-    : 'It watches your cursor. Pick a card to send it there. Drag to spin the ring.';
+    : 'Pick a card to send it there. Drag to spin the ring.';
   scene.add(cryo.root);
   const ring = createRing(PROJECTS);
   scene.add(ring.group);
@@ -375,6 +375,7 @@ async function init3D() {
     // Where the head looks: the open card, the cursor, or a slow idle scan.
     const active = currentId && ring.cards.find((c) => c.userData.project.id === currentId);
     if (active) cryo.lookAt(gaze.copy(active.position).lerp(camera.position, 0.45));
+    else if (hovered && state === 'orbit') cryo.lookAt(hovered.position);
     else if (pointer.inside) cryo.lookAt(pointer.world);
     else cryo.lookAt(scan.set(Math.sin(t * 0.35) * 6, 1 + Math.sin(t * 0.6), 9));
     cryo.update(dt, t);
